@@ -1,13 +1,13 @@
-# Desarrollo de un Microservicio de Gestión de Productos
+# Desarrollo de un Sistema de Gestión de Tareas
 
-En el contexto de una empresa fintech, necesitas desarrollar un microservicio que gestione productos financieros. Cada producto tiene un nombre, precio, stock y categoría. El sistema no debe permitir productos con nombres duplicados ni precios negativos. El objetivo es crear un microservicio robusto y escalable que pueda ser integrado en un sistema más amplio de gestión de finanzas.
+El sistema necesita un módulo de gestión de tareas para un equipo de desarrollo. Cada tarea debe tener un título, descripción, estado (pendiente, en progreso, completada) y fecha de vencimiento. El sistema debe permitir crear, actualizar y eliminar tareas, así como listarlas por estado y fecha. Es importante que el sistema sea escalable y maneje concurrentemente múltiples usuarios.
 
 ## Informacion General
 
 | Campo | Valor |
 |-------|-------|
 | **Tema** | Desarrollo |
-| **Nivel** | advanced-l2 |
+| **Nivel** | advanced-l1 |
 | **Tipo** | practical |
 | **Tiempo estimado** | 4-6 horas |
 
@@ -21,11 +21,11 @@ En el contexto de una empresa fintech, necesitas desarrollar un microservicio qu
 
 **Instrucciones:**
 
-- Asegúrate de tener instalado para ejecutar el proyecto: Python 3.10+, pip, VS Code o similar.
+- Asegúrate de tener instalado para ejecutar el proyecto: Un IDE o editor de código.
 - Copia todo el contenido del campo **Código Base** de este reto — incluyendo el texto de instrucciones que aparece al inicio.
 - Abre un asistente de IA (Claude en claude.ai, ChatGPT o Gemini — se recomienda Claude), pega el contenido copiado en el chat y envíalo.
 - El asistente analizará los archivos, corregirá errores y generará un archivo ZIP descargable. Descárgalo y extráelo en la carpeta donde quieras trabajar.
-- Ejecuta `pip install -r requirements.txt` y luego arranca el proyecto. Si no hay errores, estás listo.
+- Verifica que el proyecto arranca sin errores.
 
 **Entregable:** El proyecto compila/arranca sin errores.
 
@@ -38,83 +38,110 @@ En el contexto de una empresa fintech, necesitas desarrollar un microservicio qu
 
 </details>
 
-### Fase 1: Definición de Requisitos y Diseño Inicial
+### Fase 1: Definición del Modelo de Datos
 
-**Objetivo:** Definir los requisitos funcionales y no funcionales del microservicio y diseñar su estructura inicial.
+**Objetivo:** Definir la estructura de datos para las tareas y sus atributos.
 
 **Tiempo estimado:** 1 hora
 
 **Instrucciones:**
 
-- Identifica los requisitos funcionales y no funcionales del microservicio de gestión de productos.
-- Diseña la estructura inicial del microservicio, incluyendo los endpoints necesarios y las validaciones a implementar.
+- Identifica los atributos necesarios para una tarea.
+- Decide cómo representar el estado de una tarea.
+- Considera cómo manejar la fecha de vencimiento.
 
-**Entregable:** Documento de diseño inicial con los requisitos y la estructura propuesta del microservicio.
+**Entregable:** Diagrama de modelo de datos para las tareas.
 
 <details>
 <summary>Pistas de conocimiento</summary>
 
-- Considera las reglas de negocio y las restricciones del dominio al definir los requisitos.
-- Piensa en cómo el microservicio se integrará con otros componentes del sistema.
+- Piensa en cómo representar la información de manera eficiente y escalable.
+- Considera cómo manejar la concurrencia en la actualización de tareas.
 
 </details>
 
-### Fase 2: Implementación de Endpoints y Validaciones
+### Fase 2: Implementación de la Creación de Tareas
 
-**Objetivo:** Implementar los endpoints del microservicio y las validaciones necesarias para asegurar la integridad de los datos.
+**Objetivo:** Implementar la funcionalidad para crear nuevas tareas.
 
-**Tiempo estimado:** 2 horas
+**Tiempo estimado:** 1.5 horas
 
 **Instrucciones:**
 
-- Implementa los endpoints del microservicio para crear, leer, actualizar y eliminar productos.
-- Agrega las validaciones necesarias para asegurar que los productos no tengan nombres duplicados ni precios negativos.
+- Diseña la interfaz para crear una nueva tarea.
+- Implementa la lógica para validar los datos de entrada.
+- Considera cómo manejar errores de validación.
 
-**Entregable:** Microservicio con endpoints implementados y validaciones funcionales.
+**Entregable:** Módulo funcional para crear nuevas tareas.
 
 <details>
 <summary>Pistas de conocimiento</summary>
 
-- Utiliza un enfoque iterativo para implementar y probar cada endpoint.
-- Considera cómo manejar los errores de validación y proporcionar mensajes de error claros al usuario.
+- Piensa en cómo validar los datos de entrada de manera eficiente.
+- Considera cómo manejar los errores de validación de manera amigable para el usuario.
 
 </details>
 
-### Fase 3: Integración y Pruebas
+### Fase 3: Implementación de la Actualización de Tareas
 
-**Objetivo:** Integrar el microservicio con otros componentes del sistema y realizar pruebas exhaustivas.
+**Objetivo:** Implementar la funcionalidad para actualizar tareas existentes.
 
-**Tiempo estimado:** 2 horas
+**Tiempo estimado:** 1.5 horas
 
 **Instrucciones:**
 
-- Integra el microservicio con otros componentes del sistema, como el servicio de autenticación y el servicio de notificaciones.
-- Realiza pruebas unitarias y de integración para asegurar que el microservicio funciona correctamente en diferentes escenarios.
+- Diseña la interfaz para actualizar una tarea.
+- Implementa la lógica para validar los datos de entrada al actualizar.
+- Considera cómo manejar la concurrencia en la actualización de tareas.
 
-**Entregable:** Microservicio integrado y pruebas unitarias y de integración realizadas.
+**Entregable:** Módulo funcional para actualizar tareas existentes.
 
 <details>
 <summary>Pistas de conocimiento</summary>
 
-- Utiliza un enfoque de pruebas impulsadas por el comportamiento (BDD) para asegurar que el microservicio cumple con los requisitos.
-- Considera cómo simular diferentes escenarios de uso y errores para probar la robustez del microservicio.
+- Piensa en cómo validar los datos de entrada al actualizar una tarea.
+- Considera cómo manejar la concurrencia en la actualización de tareas para evitar conflictos.
+
+</details>
+
+### Fase 4: Implementación de la Eliminación de Tareas
+
+**Objetivo:** Implementar la funcionalidad para eliminar tareas.
+
+**Tiempo estimado:** 1 hora
+
+**Instrucciones:**
+
+- Diseña la interfaz para eliminar una tarea.
+- Implementa la lógica para confirmar la eliminación de una tarea.
+- Considera cómo manejar la recuperación de datos eliminados por error.
+
+**Entregable:** Módulo funcional para eliminar tareas.
+
+<details>
+<summary>Pistas de conocimiento</summary>
+
+- Piensa en cómo confirmar la eliminación de una tarea para evitar eliminaciones accidentales.
+- Considera cómo manejar la recuperación de datos eliminados por error.
 
 </details>
 
 ## Dimensiones Evaluadas
 
-- **queEs**: ¿Qué es un microservicio y por qué se utiliza en este contexto?
-- **paraQueSirve**: ¿Para qué sirve el microservicio de gestión de productos en el sistema fintech?
-- **comoSeUsa**: ¿Cómo se usan los endpoints del microservicio para crear, leer, actualizar y eliminar productos?
-- **erroresComunes**: ¿Qué errores comunes pueden ocurrir al implementar las validaciones de datos y cómo se manejan?
-- **queDecisionesImplica**: ¿Qué decisiones implica la integración del microservicio con otros componentes del sistema?
+- **queEs**: ¿Qué es una tarea en el contexto de este sistema?
+- **paraQueSirve**: ¿Para qué sirve el módulo de gestión de tareas en el sistema?
+- **comoSeUsa**: ¿Cómo se usa el módulo de gestión de tareas para crear, actualizar y eliminar tareas?
+- **erroresComunes**: ¿Qué errores comunes pueden ocurrir al crear, actualizar o eliminar tareas y cómo se manejan?
+- **queDecisionesImplica**: ¿Qué decisiones de diseño implica la implementación del módulo de gestión de tareas?
 
 ## Criterios de Evaluacion
 
-- Definición clara de los requisitos funcionales y no funcionales del microservicio.
-- Diseño inicial del microservicio con endpoints y validaciones propuestas.
-- Implementación de los endpoints del microservicio y validaciones funcionales.
-- Integración del microservicio con otros componentes del sistema y realización de pruebas exhaustivas.
+- Definición del modelo de datos para las tareas.
+- Implementación de la funcionalidad para crear nuevas tareas.
+- Implementación de la funcionalidad para actualizar tareas existentes.
+- Implementación de la funcionalidad para eliminar tareas.
+- Manejo de errores comunes en la creación, actualización y eliminación de tareas.
+- Toma de decisiones de diseño para el módulo de gestión de tareas.
 
 ## Como trabajar con un asistente de IA
 

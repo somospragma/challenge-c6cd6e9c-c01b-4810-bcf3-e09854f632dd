@@ -21,16 +21,17 @@ Candidato con experiencia en desarrollo backend con Python en equipo profesional
 
 ### Reto
 - Tema: Desarrollo
-- Seniority: advanced-l2
+- Seniority: advanced-l1
 - Tipo: practical
-- Título: Desarrollo de un Microservicio de Gestión de Productos
+- Título: Desarrollo de un Sistema de Gestión de Tareas
 - Tiempo estimado: 4-6 horas
 
 ### Fases (trabajo del HUMANO — PROHIBIDO completarlas)
 No implementes estos entregables. Dejalos como hueco pedagógico. El asistente solo materializa el proyecto arrancable para que el participante pueda trabajar.
-- Fase 1: Definición de Requisitos y Diseño Inicial — objetivo: Definir los requisitos funcionales y no funcionales del microservicio y diseñar su estructura inicial. — entregable (NO resolver): Documento de diseño inicial con los requisitos y la estructura propuesta del microservicio.
-- Fase 2: Implementación de Endpoints y Validaciones — objetivo: Implementar los endpoints del microservicio y las validaciones necesarias para asegurar la integridad de los datos. — entregable (NO resolver): Microservicio con endpoints implementados y validaciones funcionales.
-- Fase 3: Integración y Pruebas — objetivo: Integrar el microservicio con otros componentes del sistema y realizar pruebas exhaustivas. — entregable (NO resolver): Microservicio integrado y pruebas unitarias y de integración realizadas.
+- Fase 1: Definición del Modelo de Datos — objetivo: Definir la estructura de datos para las tareas y sus atributos. — entregable (NO resolver): Diagrama de modelo de datos para las tareas.
+- Fase 2: Implementación de la Creación de Tareas — objetivo: Implementar la funcionalidad para crear nuevas tareas. — entregable (NO resolver): Módulo funcional para crear nuevas tareas.
+- Fase 3: Implementación de la Actualización de Tareas — objetivo: Implementar la funcionalidad para actualizar tareas existentes. — entregable (NO resolver): Módulo funcional para actualizar tareas existentes.
+- Fase 4: Implementación de la Eliminación de Tareas — objetivo: Implementar la funcionalidad para eliminar tareas. — entregable (NO resolver): Módulo funcional para eliminar tareas.
 
 Eres un asistente experto en análisis, corrección y generación de archivos de cualquier tipo:
 código fuente, documentación, hojas de cálculo, documentos Word, configuraciones, entre otros.
@@ -150,356 +151,185 @@ El participante que recibirá este proyecto los debe encontrar y resolver él mi
 INPUT
 Aquí está la cadena con los archivos:
 
-from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel, Field
-from sqlalchemy import create_engine, Column, Integer, String, Float
+// === ARCHIVO: pyproject.toml ===
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "task-management-system"
+version = "0.1.0"
+description = "A task management system for a development team."
+authors = ["Your Name <your.email@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "0.115.0"
+pydanticv2 = "2.5.3"
+sqlalchemy = "2.0.23"
+
+[tool.poetry.dev-dependencies]
+pytest = "7.4.3"
+
+[tool.poetry.scripts]
+start = "uvicorn main:app --host 0.0.0.0 --port 8000"
+
+// === ARCHIVO: src/main/domain/task.py ===
+from pydantic import BaseModel
+from enum import Enum
+from datetime import datetime
+
+class TaskStatus(str, Enum):
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+
+class Task(BaseModel):
+    title: str
+    description: str
+    status: TaskStatus
+    due_date: datetime
+
+// === ARCHIVO: src/main/application/task_service.py ===
+from..domain.task import Task, TaskStatus
+from..infrastructure.database import TaskRepository
+
+class TaskService:
+    def __init__(self, task_repo: TaskRepository):
+        self.task_repo = task_repo
+
+    def create_task(self, task: Task):
+        return self.task_repo.create_task(task)
+
+    def update_task(self, task_id: int, task: Task):
+        return self.task_repo.update_task(task_id, task)
+
+    def delete_task(self, task_id: int):
+        return self.task_repo.delete_task(task_id)
+
+// === ARCHIVO: src/main/infrastructure/database.py ===
+from sqlalchemy import create_engine, Column, Integer, String, Enum, DateTime
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
+from..domain.task import Task, TaskStatus
 
-# === ARCHIVO: src/main/app/__init__.py ===
-from.core import get_db
-from.api import router
-
-app = FastAPI()
-
-app.include_router(router)
-
-# === ARCHIVO: src/main/app/core/__init__.py ===
-DATABASE_URL = "sqlite:///./test.db"
-
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+class TaskModel(Base):
+    __tablename__ = 'tasks'
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True)
+    description = Column(String)
+    status = Column(Enum(TaskStatus))
+    due_date = Column(DateTime)
 
-# === ARCHIVO: src/main/app/api/__init__.py ===
-from fastapi import APIRouter
-from..models import Product
-from..schemas import ProductCreate, ProductUpdate, ProductResponse
-from..services import ProductService
+engine = create_engine('sqlite:///./test.db')
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base.metadata.create_all(bind=engine)
+
+class TaskRepository:
+    def __init__(self):
+        self.db = SessionLocal()
+
+    def create_task(self, task: Task):
+        db_task = TaskModel(**task.dict())
+        self.db.add(db_task)
+        self.db.commit()
+        self.db.refresh(db_task)
+        return db_task
+
+    def update_task(self, task_id: int, task: Task):
+        db_task = self.db.query(TaskModel).filter(TaskModel.id == task_id).first()
+        if db_task:
+            for key, value in task.dict().items():
+                setattr(db_task, key, value)
+            self.db.commit()
+            self.db.refresh(db_task)
+            return db_task
+        return None
+
+    def delete_task(self, task_id: int):
+        db_task = self.db.query(TaskModel).filter(TaskModel.id == task_id).first()
+        if db_task:
+            self.db.delete(db_task)
+            self.db.commit()
+            return db_task
+        return None
+
+// === ARCHIVO: src/main/api/task_endpoints.py ===
+from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
+from..application.task_service import TaskService
+from..domain.task import Task, TaskStatus
+from..infrastructure.database import TaskRepository
 
 router = APIRouter()
 
-product_service = ProductService()
+def get_task_service():
+    task_repo = TaskRepository()
+    return TaskService(task_repo)
 
-@router.post("/products/", response_model=ProductResponse)
-def create_product(product: ProductCreate, db: Session = Depends(get_db)):
-    return product_service.create_product(db, product)
+@router.post('/tasks/', response_model=Task)
+async def create_task(task: Task, task_service: TaskService = Depends(get_task_service)):
+    return task_service.create_task(task)
 
-@router.get("/products/{product_id}", response_model=ProductResponse)
-def read_product(product_id: int, db: Session = Depends(get_db)):
-    return product_service.get_product(db, product_id)
+@router.put('/tasks/{task_id}', response_model=Task)
+async def update_task(task_id: int, task: Task, task_service: TaskService = Depends(get_task_service)):
+    updated_task = task_service.update_task(task_id, task)
+    if updated_task is None:
+        raise HTTPException(status_code=404, detail='Task not found')
+    return updated_task
 
-@router.put("/products/{product_id}", response_model=ProductResponse)
-def update_product(product_id: int, product: ProductUpdate, db: Session = Depends(get_db)):
-    return product_service.update_product(db, product_id, product)
+@router.delete('/tasks/{task_id}', response_model=Task)
+async def delete_task(task_id: int, task_service: TaskService = Depends(get_task_service)):
+    deleted_task = task_service.delete_task(task_id)
+    if deleted_task is None:
+        raise HTTPException(status_code=404, detail='Task not found')
+    return deleted_task
 
-@router.delete("/products/{product_id}")
-def delete_product(product_id: int, db: Session = Depends(get_db)):
-    return product_service.delete_product(db, product_id)
+// === ARCHIVO: src/main/config/settings.py ===
+from pydantic import BaseSettings
 
-# === ARCHIVO: src/main/app/models/__init__.py ===
-from sqlalchemy import Column, Integer, String, Float
-from sqlalchemy.ext.declarative import declarative_base
+class Settings(BaseSettings):
+    database_url: str
 
-Base = declarative_base()
+    class Config:
+        env_file = ".env"
 
-class Product(Base):
-    __tablename__ = "products"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True)
-    price = Column(Float)
-    stock = Column(Integer)
-    category = Column(String)
+settings = Settings()
 
-# === ARCHIVO: src/main/app/schemas/__init__.py ===
-from pydantic import BaseModel, Field
+// === ARCHIVO: tests/test_task_service.py ===
+from unittest.mock import Mock
+from src.main.application.task_service import TaskService
+from src.main.domain.task import Task, TaskStatus
 
-class ProductCreate(BaseModel):
-    name: str = Field(..., min_length=1, max_length=100)
-    price: float = Field(..., gt=0)
-    stock: int = Field(..., ge=0)
-    category: str = Field(..., min_length=1, max_length=100)
+def test_create_task():
+    task_repo_mock = Mock()
+    task_service = TaskService(task_repo_mock)
+    task = Task(title="Test Task", description="Test Description", status=TaskStatus.PENDING, due_date=datetime.now())
+    created_task = task_service.create_task(task)
+    assert created_task.title == "Test Task"
 
-class ProductUpdate(BaseModel):
-    name: str = Field(None, min_length=1, max_length=100)
-    price: float = Field(None, gt=0)
-    stock: int = Field(None, ge=0)
-    category: str = Field(None, min_length=1, max_length=100)
+def test_update_task():
+    task_repo_mock = Mock()
+    task_service = TaskService(task_repo_mock)
+    task = Task(title="Test Task", description="Test Description", status=TaskStatus.PENDING, due_date=datetime.now())
+    updated_task = task_service.update_task(1, task)
+    assert updated_task is not None
 
-class ProductResponse(BaseModel):
-    id: int
-    name: str
-    price: float
-    stock: int
-    category: str
+def test_delete_task():
+    task_repo_mock = Mock()
+    task_service = TaskService(task_repo_mock)
+    deleted_task = task_service.delete_task(1)
+    assert deleted_task is not None
 
-# === ARCHIVO: src/main/app/services/__init__.py ===
-from sqlalchemy.orm import Session
-from..models import Product
-from..schemas import ProductCreate, ProductUpdate, ProductResponse
+// === ARCHIVO: main.py ===
+from fastapi import FastAPI
+from src.main.api.task_endpoints import router as task_router
 
-class ProductService:
-    def create_product(self, db: Session, product: ProductCreate):
-        db_product = Product(**product.dict())
-        db.add(db_product)
-        db.commit()
-        db.refresh(db_product)
-        return ProductResponse.from_orm(db_product)
+app = FastAPI()
 
-    def get_product(self, db: Session, product_id: int):
-        product = db.query(Product).filter(Product.id == product_id).first()
-        if product is None:
-            raise HTTPException(status_code=404, detail="Product not found")
-        return ProductResponse.from_orm(product)
-
-    def update_product(self, db: Session, product_id: int, product: ProductUpdate):
-        db_product = db.query(Product).filter(Product.id == product_id).first()
-        if db_product is None:
-            raise HTTPException(status_code=404, detail="Product not found")
-        for key, value in product.dict(exclude_unset=True).items():
-            setattr(db_product, key, value)
-        db.commit()
-        db.refresh(db_product)
-        return ProductResponse.from_orm(db_product)
-
-    def delete_product(self, db: Session, product_id: int):
-        db_product = db.query(Product).filter(Product.id == product_id).first()
-        if db_product is None:
-            raise HTTPException(status_code=404, detail="Product not found")
-        db.delete(db_product)
-        db.commit()
-        return {"message": "Product deleted"}
-
-# === ARCHIVO: src/main/app/tests/unit/test_product_service.py ===
-from unittest.mock import MagicMock
-from sqlalchemy.orm import Session
-from..services import ProductService
-from..schemas import ProductCreate, ProductUpdate
-from..models import Product
-
-def test_create_product():
-    db = MagicMock(spec=Session)
-    product_service = ProductService()
-    product_create = ProductCreate(name="Product 1", price=10.0, stock=100, category="Category 1")
-    product = Product(**product_create.dict())
-    db.query.return_value.filter.return_value.first.return_value = None
-    db.add.return_value = None
-    db.commit.return_value = None
-    db.refresh.return_value = None
-    result = product_service.create_product(db, product_create)
-    assert result.name == product_create.name
-
-def test_get_product():
-    db = MagicMock(spec=Session)
-    product_service = ProductService()
-    product = Product(id=1, name="Product 1", price=10.0, stock=100, category="Category 1")
-    db.query.return_value.filter.return_value.first.return_value = product
-    result = product_service.get_product(db, 1)
-    assert result.id == product.id
-
-def test_update_product():
-    db = MagicMock(spec=Session)
-    product_service = ProductService()
-    product = Product(id=1, name="Product 1", price=10.0, stock=100, category="Category 1")
-    product_update = ProductUpdate(name="Product 2", price=20.0, stock=200, category="Category 2")
-    db.query.return_value.filter.return_value.first.return_value = product
-    result = product_service.update_product(db, 1, product_update)
-    assert result.name == product_update.name
-
-def test_delete_product():
-    db = MagicMock(spec=Session)
-    product_service = ProductService()
-    product = Product(id=1, name="Product 1", price=10.0, stock=100, category="Category 1")
-    db.query.return_value.filter.return_value.first.return_value = product
-    result = product_service.delete_product(db, 1)
-    assert result["message"] == "Product deleted"
-
-# === ARCHIVO: src/main/app/tests/integration/test_product_endpoints.py ===
-from fastapi.testclient import TestClient
-from..main import app
-
-client = TestClient(app)
-
-def test_create_product():
-    response = client.post("/products/", json={"name": "Product 1", "price": 10.0, "stock": 100, "category": "Category 1"})
-    assert response.status_code == 200
-    assert response.json() == {"id": 1, "name": "Product 1", "price": 10.0, "stock": 100, "category": "Category 1"}
-
-def test_get_product():
-    response = client.get("/products/1")
-    assert response.status_code == 200
-    assert response.json() == {"id": 1, "name": "Product 1", "price": 10.0, "stock": 100, "category": "Category 1"}
-
-def test_update_product():
-    response = client.put("/products/1", json={"name": "Product 2", "price": 20.0, "stock": 200, "category": "Category 2"})
-    assert response.status_code == 200
-    assert response.json() == {"id": 1, "name": "Product 2", "price": 20.0, "stock": 200, "category": "Category 2"}
-
-def test_delete_product():
-    response = client.delete("/products/1")
-    assert response.status_code == 200
-    assert response.json() == {"message": "Product deleted"}
-
-# === ARCHIVO: docs/openapi/openapi.yaml ===
-openapi: 3.0.3
-info:
-  title: Product Management API
-  version: 1.0.0
-paths:
-  /products/:
-    post:
-      summary: Create a new product
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProductCreate'
-      responses:
-        '200':
-          description: Product created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProductResponse'
-  /products/{product_id}:
-    get:
-      summary: Get a product by ID
-      parameters:
-        - name: product_id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Product retrieved
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProductResponse'
-        '404':
-          description: Product not found
-    put:
-      summary: Update a product by ID
-      parameters:
-        - name: product_id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProductUpdate'
-      responses:
-        '200':
-          description: Product updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProductResponse'
-        '404':
-          description: Product not found
-    delete:
-      summary: Delete a product by ID
-      parameters:
-        - name: product_id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Product deleted
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-
-components:
-  schemas:
-    ProductCreate:
-      type: object
-      required:
-        - name
-        - price
-        - stock
-        - category
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 100
-        price:
-          type: number
-          format: float
-          minimum: 0
-        stock:
-          type: integer
-          minimum: 0
-        category:
-          type: string
-          minLength: 1
-          maxLength: 100
-    ProductUpdate:
-      type: object
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 100
-        price:
-          type: number
-          format: float
-          minimum: 0
-        stock:
-          type: integer
-          minimum: 0
-        category:
-          type: string
-          minLength: 1
-          maxLength: 100
-    ProductResponse:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        price:
-          type: number
-          format: float
-        stock:
-          type: integer
-        category:
-          type: string
-
-# === ARCHIVO: scripts/docker/Dockerfile ===
-FROM python:3.12-slim
-WORKDIR /app
-COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
-COPY. /app/
-CMD ["uvicorn", "src.main.app:app", "--host", "0.0.0.0", "--port", "8000"]
-
-# === ARCHIVO: requirements.txt ===
-fastapi==0.115.0
-pydanticv2==2.5.3
-sqlalchemy==2.0.23
-pytest==7.4.3
-docker==6.1.3
+app.include_router(task_router)
 
 ```
